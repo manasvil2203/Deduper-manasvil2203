@@ -22,6 +22,22 @@ o: str = args.output
 u: str = args.umi
 #h: int = args.help
 
+
+# initialize counters
+#Counts the total number of header
+header_count = 0
+# Counts the total number of umis
+wrong_umi_count = 0
+# Count the number of pcr duplicate
+duplicate_count = 0
+# Counts the number of unique reads
+unique_count = 0
+# Counts the total number of reads
+total_reads = 0
+
+# dictionary to count reads per chromosome
+chrom_counts = {}
+
 #Initialize an empty set 
 umi_set :set = set()
 
@@ -36,6 +52,8 @@ with open(u, "r") as file:
         if item:  
             # Add the umi to the set
             umi_set.add(item)
+        else:
+            wrong_umi_count += 1
 
 #print(umi_set)
 
@@ -125,8 +143,13 @@ with open(o, "w") as out:
             if line.startswith("@"):
                 #Write the line into the output
                 out.write(line)
+                # Count the header line
+                header_count += 1
                 # Keep going
                 continue
+
+            #Count the totsal number of reads
+            total_reads += 1
             # Grab the line that is not a header and strip and split
             bits = line.strip().split()
             #print(bits)
@@ -186,10 +209,31 @@ with open(o, "w") as out:
                 out.write(line)
                 #And add the mini_key into my set
                 tracker_set.add(mini_key)
+                # Increment counter of unique reads
+                unique_count += 1
+                # Check if this chromosome has been seen before
+                if chrom in chrom_counts:
+                    # If yes, increment its count by 1
+                    chrom_counts[chrom] += 1
+                else:
+                    # If not, initialize its count to 1
+                    chrom_counts[chrom] = 1
+            # Else increment the counter of number of pcr duplicates
+            else:
+                duplicate_count += 1
             
 
 
-
+print("\n===== SUMMARY REPORT =====")
+print(f"Header lines: {header_count}")
+print(f"Total reads processed: {total_reads}")
+print(f"Unique reads kept: {unique_count}")
+print(f"Wrong UMIs skipped: {wrong_umi_count}")
+print(f"PCR duplicates removed: {duplicate_count}")
+print("\nReads per chromosome:")
+for chrom, count in chrom_counts.items():
+    print(f"{chrom}\t{count}")
+print("==========================\n")
 
 
 
