@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
-import matplotlib.pyplot as plt
 import re
+import gzip
+
 
 #Creating my varuables using Argparse
 def get_args():
@@ -10,7 +11,8 @@ def get_args():
     parser.add_argument("-f", "--file", help="Specify the filename of the sorted sam file", required=False)
     parser.add_argument("-o", "--output", help="Specify the filename of the output sam file", required=False)
     parser.add_argument("-u", "--umi", help="Specify the valid umi list", required=True)
-    #parser.add_argument("-h", "--help", help="Prints a useful HELP message", required=False)
+    parser.add_argument("-s", "--summary", help="Specify the filename for the summary counts", required=True)
+    
 
     return parser.parse_args()  
 
@@ -20,23 +22,24 @@ args = get_args()
 f: str = args.file
 o: str = args.output
 u: str = args.umi
-#h: int = args.help
+s: str  = args.summary
+
 
 
 # initialize counters
 #Counts the total number of header
-header_count = 0
+header_count:int = 0
 # Counts the total number of umis
-wrong_umi_count = 0
+wrong_umi_count:int = 0
 # Count the number of pcr duplicate
-duplicate_count = 0
+duplicate_count:int = 0
 # Counts the number of unique reads
-unique_count = 0
+unique_count:int = 0
 # Counts the total number of reads
-total_reads = 0
+total_reads:int = 0
 
 # dictionary to count reads per chromosome
-chrom_counts = {}
+chrom_counts:dict = {}
 
 #Initialize an empty set 
 umi_set :set = set()
@@ -52,8 +55,7 @@ with open(u, "r") as file:
         if item:  
             # Add the umi to the set
             umi_set.add(item)
-        else:
-            wrong_umi_count += 1
+       
 
 #print(umi_set)
 
@@ -125,10 +127,7 @@ def compute_five_prime(strand: str, pos: int, cigar: str) -> int:
 #compute_five_prime("neg", 34, "6S5M6N7S")
 
 # Temp variable to store current chrom number
-current_chrom = 0
-
-# Temp variable to store the current 5 prime position
-current_pos = 0
+current_chrom = None
 
 # Keeps track of UMI, strand and 5 prime
 tracker_set: set = set()
@@ -136,7 +135,7 @@ tracker_set: set = set()
 #Open an output file
 with open(o, "w") as out:
     #Parse through every line in file
-    with open (f, "r") as file:
+    with gzip.open(f, "rt") as file:
         # For every line in the file
         for line in file: 
             # if the line starts with an @
@@ -158,6 +157,8 @@ with open(o, "w") as out:
             #print(umi)
                 # If the umi is not in the valid umi set
             if umi not in umi_set:
+                # increment counter
+                wrong_umi_count += 1
                 # then keep going
                 continue
 
@@ -197,7 +198,7 @@ with open(o, "w") as out:
                 #Empty the set
                 tracker_set: set = set()
                 #current_chrom will be now set to chromosome
-                current_chrom:int = chrom
+                current_chrom = chrom
             
 
             #Create a variable to store a tuple of the 5', strand, UMI
@@ -223,22 +224,14 @@ with open(o, "w") as out:
                 duplicate_count += 1
             
 
-
-print("\n===== SUMMARY REPORT =====")
-print(f"Header lines: {header_count}")
-print(f"Total reads processed: {total_reads}")
-print(f"Unique reads kept: {unique_count}")
-print(f"Wrong UMIs skipped: {wrong_umi_count}")
-print(f"PCR duplicates removed: {duplicate_count}")
-print("\nReads per chromosome:")
-for chrom, count in chrom_counts.items():
-    print(f"{chrom}\t{count}")
-print("==========================\n")
-
-
-
-
-
-    
-
-
+with open(s, "w") as sum:
+    sum.write("\n===== SUMMARY REPORT =====\n")
+    sum.write(f"Header lines: {header_count}\n")
+    sum.write(f"Total reads processed: {total_reads}\n")
+    sum.write(f"Unique reads kept: {unique_count}\n")
+    sum.write(f"Wrong UMIs skipped: {wrong_umi_count}\n")
+    sum.write(f"PCR duplicates removed: {duplicate_count}\n")
+    sum.write("\nReads per chromosome:\n")
+    for chrom, count in chrom_counts.items():
+        sum.write(f"{chrom}\t{count}\n")
+    sum.write("==========================\n")
