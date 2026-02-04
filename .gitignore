@@ -1,0 +1,23 @@
+# Sequencing data
+*.sam
+*.sam.gz
+*.bam
+*.fastq
+*.fastq.gz
+
+# Output files
+*dedup*
+*summary*
+*.txt
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
