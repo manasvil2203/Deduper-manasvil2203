@@ -7,9 +7,9 @@ import gzip
 
 #Creating my varuables using Argparse
 def get_args():
-    parser = argparse.ArgumentParser(description="A program to dedupe an input sam file and output a sam file clean of PCR duplicates")
-    parser.add_argument("-f", "--file", help="Specify the filename of the sorted sam file", required=False)
-    parser.add_argument("-o", "--output", help="Specify the filename of the output sam file", required=False)
+    parser = argparse.ArgumentParser(description= "Deduplicate a SAM (or SAM.gz) by (chromosome, 5' position, strand, UMI). INPUT MUST BE SORTED by RNAME then POS.")
+    parser.add_argument("-f", "--file", help="Specify the filename of the sorted sam file", required=True)
+    parser.add_argument("-o", "--output", help="Specify the filename of the output sam file", required=True)
     parser.add_argument("-u", "--umi", help="Specify the valid umi list", required=True)
     parser.add_argument("-s", "--summary", help="Specify the filename for the summary counts", required=True)
     
@@ -125,6 +125,9 @@ def compute_five_prime(strand: str, pos: int, cigar: str) -> int:
     return five_prime
 
 #compute_five_prime("neg", 34, "6S5M6N7S")
+def open_maybe_gzip(path: str, mode: str = "rt"):
+    """Open a file, using gzip.open if it is compressed (.gz), otherwise open()."""
+    return gzip.open(path, mode) if path.endswith(".gz") else open(path, mode)
 
 # Temp variable to store current chrom number
 current_chrom = None
@@ -135,7 +138,7 @@ tracker_set: set = set()
 #Open an output file
 with open(o, "w") as out:
     #Parse through every line in file
-    with gzip.open(f, "rt") as file:
+    with open_maybe_gzip(f, "rt") as file:
         # For every line in the file
         for line in file: 
             # if the line starts with an @
